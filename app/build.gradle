@@ -1,0 +1,76 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.neenbedankt.android-apt'
+
+android {
+    compileSdkVersion 24
+    buildToolsVersion "25.0.0"
+
+    defaultConfig {
+        applicationId "com.github.yaming116.android.config.sample"
+        minSdkVersion 14
+        targetSdkVersion 24
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+
+}
+
+final List<String> exclusions = [];
+
+
+
+tasks.create("excludeTask") << {
+    println "exclusions: " + exclusions
+    exclusions.each {
+        File file = file("${buildDir}/intermediates/exploded-aar/${it}")
+        println("Excluding file " + file)
+        if (file.exists()) {
+            file.delete();
+        }
+    }
+}
+
+tasks.whenTaskAdded({
+    if (it.name.matches(/^process.*Resources$/)) {
+        println "excludeTask" + it.name
+        it.dependsOn excludeTask
+    }
+
+    if (it.name.matches(/^prepare.*Dependencies$/)) {
+        excludeTask.dependsOn it
+    }
+})
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile ('com.android.support:appcompat-v7:24.2.1')
+            .exclude('res/values/test.xml')
+    compile project(':module-config-annotation')
+    compile project(':module-config-api')
+
+    apt project(':module-config-compiler')
+}
+
+
+apt {
+    arguments {
+        moduleName project.getName();
+    }
+}
+
+Dependency.metaClass.exclude = { String[] currentExclusions ->
+    println 'exclude Dependency.metaClass'
+    currentExclusions.each {
+        exclusions.add("${getGroup()}/${getName()}/${getVersion()}/${it}")
+    }
+    return thisObject
+}

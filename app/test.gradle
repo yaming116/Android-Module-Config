@@ -1,0 +1,7 @@
+def name = 'processAppDebugResources'
+
+if (name.matches(/^process.*Resources$/))  {
+    println 'hello'
+}else {
+    println('Nihao')
+}
